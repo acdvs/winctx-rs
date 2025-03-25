@@ -1,0 +1,18 @@
+[package]
+name = "winctx"
+description = "Library for managing Windows context menu entries"
+keywords = ["Windows", "registry", "context"]
+authors = ["Adam Davies"]
+version = "1.0.0"
+edition = "2024"
+license = "MIT"
+repository = "https://github.com/acdvs/winctx-rs"
+
+[dependencies]
+winreg = "0.55.0"
+
+[dev-dependencies.uuid]
+version = "1.16.0"
+features = [
+    "v4",
+]
