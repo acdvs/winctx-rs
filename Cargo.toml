@@ -6,7 +6,7 @@ authors = ["Adam Davies"]
 version = "1.0.0"
 edition = "2024"
 license = "MIT"
-repository = "https://github.com/acdvs/win_ctx-rs"
+repository = "https://github.com/acdvs/winctx-rs"
 
 [dependencies]
 winreg = "0.55.0"
