@@ -1,5 +1,11 @@
 A simple Rust library for managing Windows context menu entries.
 
+## Installation
+
+```sh
+cargo add win-ctx
+```
+
 ## Basic example
 
 The following code creates a top-level context menu entry that appears on
