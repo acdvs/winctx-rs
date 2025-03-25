@@ -1,6 +1,6 @@
 use common::cleanup_entry;
 use uuid::Uuid;
-use winctx::*;
+use win_ctx::*;
 
 mod common;
 

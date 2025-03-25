@@ -10,7 +10,7 @@ const HKCU: RegKey = RegKey::predef(HKEY_CURRENT_USER);
 /// # Examples
 ///
 /// ```no_run
-/// winctx::toggle_old_menu(true);
+/// win_ctx::toggle_old_menu(true);
 /// ```
 pub fn toggle_old_menu(enable: bool) -> io::Result<()> {
     if enable {

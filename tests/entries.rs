@@ -1,7 +1,7 @@
 use common::*;
 use std::io::ErrorKind;
 use uuid::Uuid;
-use winctx::*;
+use win_ctx::*;
 use winreg::{RegKey, enums::*};
 
 mod common;

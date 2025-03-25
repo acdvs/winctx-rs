@@ -6,7 +6,7 @@ The following code creates a top-level context menu entry that appears on
 right-clicked folders and opens the target folder in the terminal.
 
 ```rust
-use winctx::*;
+use win_ctx::*;
 
 CtxEntry::new_with_options(
     "Open in terminal",
@@ -29,7 +29,7 @@ To reduce line count, the more basic non-options functions can be used,
 and individual values are then set on the resulting entries.
 
 ```rust
-use winctx::{CtxEntry, ActivationType};
+use win_ctx::{CtxEntry, ActivationType};
 
 let mut parent = CtxEntry::new("Open directory in", &ActivationType::Background)?;
 parent.set_extended(true);

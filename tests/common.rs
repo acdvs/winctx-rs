@@ -1,4 +1,4 @@
-use winctx::CtxEntry;
+use win_ctx::CtxEntry;
 use winreg::{RegKey, enums::HKEY_CLASSES_ROOT};
 
 pub fn cleanup_entry(entry: CtxEntry) {
