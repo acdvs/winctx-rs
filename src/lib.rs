@@ -1,6 +1,17 @@
-//! Library for managing Windows context menu entries.
+//! A Rust library for managing Windows context menu entries.
 //!
-//! # Basic example
+//! ## Installation
+//!
+//! ```sh
+//! cargo add win-ctx
+//! ```
+//!
+//! ## Features
+//!
+//! - Create and edit context menu entries and sub-entries
+//! - Toggle the pre-Windows 11 context menu
+//!
+//! ## Basic example
 //!
 //! The following code creates a top-level context menu entry that appears on
 //! right-clicked folders and opens the target folder in the terminal.
@@ -20,7 +31,7 @@
 //! )?;
 //! ```
 //!
-//! # Advanced example
+//! ## Advanced example
 //!
 //! The following code creates a context menu entry with child entries that each
 //! open the target folder in the selected program.
@@ -43,7 +54,7 @@
 //! child_2.set_icon(Some("C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe"))?;
 //! ```
 //!
-//! # Errors
+//! ## Errors
 //!
 //! Because this library manipulates the Windows registry, code must be executed
 //! as administrator or any other user with sufficient privileges.
@@ -51,11 +62,6 @@
 //! Errors will have an [`ErrorKind`] of either:
 //! - `PermissionDenied` for insufficient privileges, or
 //! - `NotFound` for operations on missing keys and values.
-//!
-//! It should also be noted that fool-proof one-to-one parity is not possible
-//! between this library and the Windows registry. There are cases where in-scope
-//! entries can be thrown out of sync, so care should be taken when manipulating,
-//! for instance, parent-child entry relationships.
 //!
 //! [`ErrorKind`]: https://doc.rust-lang.org/std/io/enum.ErrorKind.html
 
