@@ -66,7 +66,7 @@
 //! [`ErrorKind`]: https://doc.rust-lang.org/std/io/enum.ErrorKind.html
 
 pub use entry::*;
-pub use utils::toggle_old_menu;
+pub use utils::toggle_classic_menu;
 
 mod entry;
 mod path;

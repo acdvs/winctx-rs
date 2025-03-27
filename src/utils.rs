@@ -4,15 +4,15 @@ use winreg::{RegKey, enums::HKEY_CURRENT_USER};
 
 const HKCU: RegKey = RegKey::predef(HKEY_CURRENT_USER);
 
-/// Enable or disable the old Windows context menu.
+/// Enable or disable the pre-Windows 11 context menu.
 /// You must restart explorer.exe for changes to take effect.
 ///
 /// # Examples
 ///
 /// ```no_run
-/// win_ctx::toggle_old_menu(true);
+/// win_ctx::toggle_classic_menu(true)?;
 /// ```
-pub fn toggle_old_menu(enable: bool) -> io::Result<()> {
+pub fn toggle_classic_menu(enable: bool) -> io::Result<()> {
     if enable {
         let path = format!("{}\\InprocServer32\\", CTX_MENU_PATH);
         let (key, _) = HKCU.create_subkey(path).unwrap();
@@ -31,20 +31,15 @@ mod tests {
     use super::*;
 
     #[test]
-    fn enable_old_menu() {
-        toggle_old_menu(true).expect("Failed to enable old context menu");
-        // Duplicate calls shouldn't panic
-        toggle_old_menu(true).expect("Failed to enable old context menu");
+    fn disable_enable_classic_menu() {
+        toggle_classic_menu(false).expect("Failed to disable classic menu");
+        toggle_classic_menu(false).expect("Duplicate menu disable call should be ok");
         HKCU.open_subkey(CTX_MENU_PATH)
-            .expect("Old context menu key should exist");
-    }
+            .expect_err("Classic menu key should not exist");
 
-    #[test]
-    fn disable_old_menu() {
-        toggle_old_menu(false).expect("Failed to disable old context menu");
-        // Duplicate calls shouldn't panic
-        toggle_old_menu(false).expect("Failed to disable old context menu");
+        toggle_classic_menu(true).expect("Failed to enable classic menu");
+        toggle_classic_menu(true).expect("Duplicate menu enable call should be ok");
         HKCU.open_subkey(CTX_MENU_PATH)
-            .expect_err("Old context menu key should not exist");
+            .expect("Classic menu key should exist");
     }
 }
