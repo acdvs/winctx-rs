@@ -42,8 +42,8 @@ fn parent_with_children() {
     assert!(child_1.parent().is_some(), "Child 1 should have parent");
     assert!(child_2.parent().is_some(), "Child 2 should have parent");
     assert_eq!(
-        child_1.parent().unwrap().get_full_path(),
-        child_2.parent().unwrap().get_full_path(),
+        child_1.parent().unwrap().path(),
+        child_2.parent().unwrap().path(),
         "Children do not have same parent"
     );
     cleanup_entry(parent);

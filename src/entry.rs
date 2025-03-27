@@ -174,7 +174,7 @@ impl CtxEntry {
     /// entry.delete();
     /// ```
     pub fn delete(self) -> io::Result<()> {
-        HKCR.delete_subkey_all(&self.get_full_path())
+        HKCR.delete_subkey_all(&self.path())
     }
 
     /// Gets the entry's current name.
@@ -220,7 +220,7 @@ impl CtxEntry {
     /// let command = entry.command()?;
     /// ```
     pub fn command(&self) -> Option<String> {
-        let path = format!(r"{}\command", self.get_full_path());
+        let path = format!(r"{}\command", self.path());
         let key = get_key(&path);
 
         match key {
@@ -252,7 +252,7 @@ impl CtxEntry {
     /// let icon = entry.icon()?;
     /// ```
     pub fn icon(&self) -> Option<String> {
-        match get_key(&self.get_full_path()) {
+        match get_key(&self.path()) {
             Ok(k) => k.get_value::<String, _>("Icon").ok(),
             Err(_) => None,
         }
@@ -279,7 +279,7 @@ impl CtxEntry {
     /// let position = entry.position()?;
     /// ```
     pub fn position(&self) -> Option<MenuPosition> {
-        match get_key(&self.get_full_path()) {
+        match get_key(&self.path()) {
             Ok(k) => match k.get_value::<String, _>("Position") {
                 Ok(v) if v == "Top" => Some(MenuPosition::Top),
                 Ok(v) if v == "Bottom" => Some(MenuPosition::Bottom),
@@ -325,7 +325,7 @@ impl CtxEntry {
     /// let is_extended = entry.extended();
     /// ```
     pub fn extended(&self) -> bool {
-        match get_key(&self.get_full_path()) {
+        match get_key(&self.path()) {
             Ok(k) => k.get_value::<String, _>("Extended").ok().is_some(),
             Err(_) => false,
         }
@@ -469,9 +469,9 @@ impl CtxEntry {
     ///
     /// ```no_run
     /// let entry = CtxEntry::new("Basic entry", ActivationType::Background)?;
-    /// let path = entry.get_full_path();
+    /// let path = entry.path();
     /// ```
-    pub fn get_full_path(&self) -> String {
+    pub fn path(&self) -> String {
         get_full_path(&self.entry_type, &self.path)
     }
 }

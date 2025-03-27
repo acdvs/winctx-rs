@@ -3,7 +3,7 @@ use winreg::{RegKey, enums::HKEY_CLASSES_ROOT};
 
 pub fn cleanup_entry(entry: CtxEntry) {
     let hkcr = RegKey::predef(HKEY_CLASSES_ROOT);
-    let path = entry.get_full_path();
+    let path = entry.path();
     hkcr.delete_subkey_all(&path).expect("Key cleanup failed");
 }
 
