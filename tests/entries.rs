@@ -170,12 +170,16 @@ fn rename_entry() {
     let new_id = Uuid::new_v4().to_string();
     let mut entry = CtxEntry::new(&old_id, &ActivationType::Folder).unwrap();
 
-    let old_key = HKCR.open_subkey(format!("Directory\\shell\\{}", old_id));
-    assert!(old_key.is_ok(), "Initial entry does not exist");
-
+    HKCR.open_subkey(format!("Directory\\shell\\{}", old_id))
+        .expect("Initial entry does not exist");
     entry.rename(&new_id).expect("Failed to rename entry");
-    let new_key = HKCR.open_subkey(format!("Directory\\shell\\{}", new_id));
-    assert!(new_key.is_ok(), "Renamed entry does not exist");
+    HKCR.open_subkey(format!("Directory\\shell\\{}", new_id))
+        .expect("Renamed entry does not exist");
+
+    entry
+        .rename("")
+        .expect_err("Blank name should not be allowed");
+
     cleanup_entry(entry);
 }
 

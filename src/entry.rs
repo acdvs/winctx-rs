@@ -189,6 +189,13 @@ impl CtxEntry {
     /// entry.rename("Renamed entry");
     /// ```
     pub fn rename(&mut self, name: &str) -> io::Result<()> {
+        if name.len() == 0 {
+            return Err(io::Error::new(
+                ErrorKind::InvalidInput,
+                "Name cannot be empty",
+            ));
+        }
+
         let parent_name_path = &self.path[..self.path.len() - 1];
         let parent_path_str = get_full_path(&self.entry_type, parent_name_path);
         let parent_key = HKCR.open_subkey(parent_path_str)?;
