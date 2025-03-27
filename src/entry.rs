@@ -17,7 +17,7 @@ pub enum ActivationType {
     Background,
 }
 
-/// Entry position in the context menu (only applies at top level)
+/// Entry position in the context menu
 #[derive(Clone)]
 pub enum MenuPosition {
     Top,
@@ -34,11 +34,11 @@ pub struct CtxEntry {
 /// Options for further customizing an entry
 #[derive(Clone)]
 pub struct EntryOptions {
-    /// The command to run when the entry is selected
+    /// Command to run when the entry is selected
     pub command: Option<String>,
-    /// The icon to display beside the entry
+    /// Icon to display beside the entry
     pub icon: Option<String>,
-    /// The location of the entry in the context menu (if top-level)
+    /// Entry position in the context menu
     pub position: Option<MenuPosition>,
     /// Whether the entry should only appear with Shift+RClick
     pub extended: bool,
@@ -162,7 +162,7 @@ impl CtxEntry {
     ///
     /// ```no_run
     /// let entry = CtxEntry::new("Basic entry", ActivationType::Background)?;
-    /// entry.delete();
+    /// entry.delete()?;
     /// ```
     pub fn delete(self) -> io::Result<()> {
         HKCR.delete_subkey_all(&self.path())
@@ -186,7 +186,7 @@ impl CtxEntry {
     ///
     /// ```no_run
     /// let mut entry = CtxEntry::new("Basic entry", ActivationType::Background)?;
-    /// entry.rename("Renamed entry");
+    /// entry.rename("Renamed entry")?;
     /// ```
     pub fn rename(&mut self, name: &str) -> io::Result<()> {
         if name.len() == 0 {
@@ -234,7 +234,7 @@ impl CtxEntry {
     /// ```no_run
     /// let mut entry = CtxEntry::new("Basic entry", ActivationType::Folder)?;
     /// // This command opens the target directory in Powershell.
-    /// entry.set_command(Some("powershell.exe -noexit -command Set-Location -literalPath '%V'"));
+    /// entry.set_command(Some("powershell.exe -noexit -command Set-Location -literalPath '%V'"))?;
     /// ```
     pub fn set_command(&mut self, command: Option<&str>) -> io::Result<()> {
         match command {
@@ -271,7 +271,7 @@ impl CtxEntry {
     ///
     /// ```no_run
     /// let mut entry = CtxEntry::new("Basic entry", ActivationType::Background)?;
-    /// entry.set_icon(Some("C:\\Windows\\System32\\control.exe"));
+    /// entry.set_icon(Some("C:\\Windows\\System32\\control.exe"))?;
     /// ```
     pub fn set_icon(&mut self, icon: Option<&str>) -> io::Result<()> {
         match icon {
@@ -306,7 +306,7 @@ impl CtxEntry {
     ///
     /// ```no_run
     /// let mut entry = CtxEntry::new("Basic entry", ActivationType::Background)?;
-    /// entry.set_position(Some(MenuPosition::Bottom));
+    /// entry.set_position(Some(MenuPosition::Bottom))?;
     /// ```
     pub fn set_position(&mut self, position: Option<MenuPosition>) -> io::Result<()> {
         if position.is_none() {
@@ -343,7 +343,7 @@ impl CtxEntry {
     ///
     /// ```no_run
     /// let mut entry = CtxEntry::new("Basic entry", ActivationType::Background)?;
-    /// entry.set_extended(true);
+    /// entry.set_extended(true)?;
     /// ```
     pub fn set_extended(&mut self, extended: bool) -> io::Result<()> {
         if extended {
