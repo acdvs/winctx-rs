@@ -11,7 +11,7 @@
 //! - Create and edit context menu entries and sub-entries
 //! - Toggle the pre-Windows 11 context menu
 //!
-//! ## Basic example
+//! ## Basic examples
 //!
 //! The following code creates a top-level context menu entry that appears on
 //! right-clicked folders and opens the target folder in the terminal.
@@ -26,12 +26,11 @@
 //!         command: Some("cmd /s /k pushd \"%V\""),
 //!         icon: Some("C:\\Windows\\System32\\cmd.exe"),
 //!         position: None,
+//!         separator: None,
 //!         extended: false,
 //!     }
 //! )?;
 //! ```
-//!
-//! ## Advanced example
 //!
 //! The following code creates a context menu entry with child entries that each
 //! open the target folder in the selected program.
@@ -56,14 +55,16 @@
 //!
 //! ## Errors
 //!
-//! Because this library manipulates the Windows registry, code must be executed
-//! as administrator or any other user with sufficient privileges.
+//! It's possible that an entry's underlying registry key goes out of sync,
+//! so most `CtxEntry` functions verify this and return a [`std::io::Result`].
 //!
 //! Errors will have an [`ErrorKind`] of either:
-//! - `PermissionDenied` for insufficient privileges, or
+//! - `PermissionDenied` for insufficient privileges,
+//! - `InvalidValue` for invalid entry renames, or
 //! - `NotFound` for operations on missing keys and values.
 //!
 //! [`ErrorKind`]: https://doc.rust-lang.org/std/io/enum.ErrorKind.html
+//! [`std::io::Result`]: https://doc.rust-lang.org/std/io/type.Result.html
 
 pub use entry::*;
 pub use utils::toggle_classic_menu;
