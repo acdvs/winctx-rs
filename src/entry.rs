@@ -100,18 +100,9 @@ impl CtxEntry {
             key,
         };
 
-        if let Some(command) = &opts.command {
-            entry.set_command(&command)?;
-        }
-
-        if let Some(icon) = &opts.icon {
-            entry.set_icon(&icon)?;
-        }
-
-        if let Some(position) = &opts.position {
-            entry.set_position(Some(position.clone()))?;
-        }
-
+        entry.set_command(opts.command.as_deref())?;
+        entry.set_icon(opts.icon.as_deref())?;
+        entry.set_position(opts.position.clone())?;
         entry.set_extended(opts.extended)?;
 
         Ok(entry)
@@ -238,9 +229,18 @@ impl CtxEntry {
     /// // This command opens the target directory in Powershell.
     /// entry.set_command(Some("powershell.exe -noexit -command Set-Location -literalPath '%V'"));
     /// ```
-    pub fn set_command(&mut self, command: &str) -> io::Result<()> {
-        let (key, _) = self.key.create_subkey("command")?;
-        key.set_value("", &command)
+    pub fn set_command(&mut self, command: Option<&str>) -> io::Result<()> {
+        match command {
+            Some(c) => {
+                let (key, _) = self.key.create_subkey("command")?;
+                key.set_value("", &c)
+            }
+            None => match self.key.delete_subkey("command") {
+                Err(e) if e.kind() == ErrorKind::NotFound => Ok(()),
+                Err(e) => Err(e),
+                Ok(_) => Ok(()),
+            },
+        }
     }
 
     /// Gets the entry's icon, if any.
@@ -266,8 +266,11 @@ impl CtxEntry {
     /// let mut entry = CtxEntry::new("Basic entry", ActivationType::Background)?;
     /// entry.set_icon(Some("C:\\Windows\\System32\\control.exe"));
     /// ```
-    pub fn set_icon(&mut self, icon: &str) -> io::Result<()> {
-        self.key.set_value("Icon", &icon)
+    pub fn set_icon(&mut self, icon: Option<&str>) -> io::Result<()> {
+        match icon {
+            Some(icon) => self.key.set_value("Icon", &icon),
+            None => self.safe_delete_value("Icon"),
+        }
     }
 
     /// Gets the entry's position, if any.
@@ -300,11 +303,7 @@ impl CtxEntry {
     /// ```
     pub fn set_position(&mut self, position: Option<MenuPosition>) -> io::Result<()> {
         if position.is_none() {
-            return match self.key.delete_value("Position") {
-                Err(e) if e.kind() == ErrorKind::NotFound => Ok(()),
-                Err(e) => Err(e),
-                Ok(_) => Ok(()),
-            };
+            return self.safe_delete_value("Position");
         }
 
         let position_str = match position {
@@ -473,6 +472,14 @@ impl CtxEntry {
     /// ```
     pub fn path(&self) -> String {
         get_full_path(&self.entry_type, &self.path)
+    }
+
+    fn safe_delete_value(&self, value: &str) -> io::Result<()> {
+        match self.key.delete_value(value) {
+            Err(e) if e.kind() == ErrorKind::NotFound => Ok(()),
+            Err(e) => Err(e),
+            Ok(_) => Ok(()),
+        }
     }
 }
 

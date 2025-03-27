@@ -114,7 +114,9 @@ fn get_and_set_command() {
     let key = HKCR.open_subkey(format!("Directory\\shell\\{id}")).unwrap();
 
     assert_reg_command!(false, key);
-    entry.set_command(command).expect("Failed to set command");
+    entry
+        .set_command(Some(command))
+        .expect("Failed to set command");
     assert_reg_command!(true, key, command);
     assert_eq!(entry.command().unwrap(), command);
     cleanup_entry(entry);
@@ -128,7 +130,7 @@ fn get_and_set_icon() {
     let key = HKCR.open_subkey(format!("Directory\\shell\\{id}")).unwrap();
 
     assert_reg_value!(false, key, "Icon");
-    entry.set_icon(icon).expect("Failed to set icon");
+    entry.set_icon(Some(icon)).expect("Failed to set icon");
     assert_reg_value!(true, key, "Icon", icon);
     assert_eq!(entry.icon().unwrap(), icon);
     cleanup_entry(entry);
