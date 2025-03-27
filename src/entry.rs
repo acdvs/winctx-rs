@@ -24,6 +24,14 @@ pub enum MenuPosition {
     Bottom,
 }
 
+/// Context menu separator
+#[derive(Clone)]
+pub enum Separator {
+    Before,
+    After,
+    Both,
+}
+
 pub struct CtxEntry {
     /// The path to the entry as a list of entry names
     pub path: Vec<String>,
@@ -40,6 +48,8 @@ pub struct EntryOptions {
     pub icon: Option<String>,
     /// Entry position in the context menu
     pub position: Option<MenuPosition>,
+    /// Separators to include around the entry
+    pub separator: Option<Separator>,
     /// Whether the entry should only appear with Shift+RClick
     pub extended: bool,
 }
@@ -125,6 +135,7 @@ impl CtxEntry {
                 command: None,
                 icon: None,
                 position: None,
+                separator: None,
                 extended: false,
             },
         )
@@ -349,10 +360,62 @@ impl CtxEntry {
         if extended {
             self.key.set_value("Extended", &"")
         } else {
-            match self.key.delete_value("Extended") {
-                Err(e) if e.kind() == ErrorKind::NotFound => Ok(()),
-                Err(e) => Err(e),
-                Ok(_) => Ok(()),
+            self.safe_delete_value("Extended")
+        }
+    }
+
+    /// Gets the entry's separator(s), if any.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// let entry = CtxEntry::new("Basic entry", ActivationType::Background)?;
+    /// let separator = entry.separator()?;
+    /// ```
+    pub fn separator(&self) -> Option<Separator> {
+        let sep_before = self.key.get_value::<String, _>("SeparatorBefore");
+        let sep_after = self.key.get_value::<String, _>("SeparatorAfter");
+
+        if sep_before.is_ok() && sep_after.is_ok() {
+            Some(Separator::Both)
+        } else if sep_before.is_ok() {
+            Some(Separator::Before)
+        } else if sep_after.is_ok() {
+            Some(Separator::After)
+        } else {
+            None
+        }
+    }
+
+    /// Sets the entry's separator(s).
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// let mut entry = CtxEntry::new("Basic entry", ActivationType::Background)?;
+    /// entry.set_separator(Some(Separator::After))?;
+    /// ```
+    pub fn set_separator(&mut self, separator: Option<Separator>) -> io::Result<()> {
+        match separator {
+            Some(Separator::Before) => {
+                self.key.set_value("SeparatorBefore", &"")?;
+                self.safe_delete_value("SeparatorAfter")?;
+                Ok(())
+            }
+            Some(Separator::After) => {
+                self.key.set_value("SeparatorAfter", &"")?;
+                self.safe_delete_value("SeparatorBefore")?;
+                Ok(())
+            }
+            Some(Separator::Both) => {
+                self.key.set_value("SeparatorBefore", &"")?;
+                self.key.set_value("SeparatorAfter", &"")?;
+                Ok(())
+            }
+            None => {
+                self.safe_delete_value("SeparatorBefore")?;
+                self.safe_delete_value("SeparatorAfter")?;
+                Ok(())
             }
         }
     }
@@ -438,6 +501,7 @@ impl CtxEntry {
                 command: None,
                 icon: None,
                 position: None,
+                separator: None,
                 extended: false,
             },
         )

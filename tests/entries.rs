@@ -91,6 +91,7 @@ fn entry_with_options() {
             command: Some(test_str.to_string()),
             icon: Some(test_str.to_string()),
             position: Some(MenuPosition::Top),
+            separator: Some(Separator::After),
             extended: true,
         },
     )
@@ -148,6 +149,22 @@ fn get_and_set_position() {
         .set_position(Some(position))
         .expect("Failed to set position");
     assert_reg_value!(true, key, "Position", "Bottom");
+    cleanup_entry(entry);
+}
+
+#[test]
+fn get_and_set_separator() {
+    let id = Uuid::new_v4().to_string();
+    let mut entry = CtxEntry::new(&id, &ActivationType::Folder).unwrap();
+    let key = HKCR.open_subkey(format!("Directory\\shell\\{id}")).unwrap();
+
+    assert_reg_value!(false, key, "SeparatorBefore");
+    assert_reg_value!(false, key, "SeparatorAfter");
+    entry
+        .set_separator(Some(Separator::Both))
+        .expect("Failed to set separator");
+    assert_reg_value!(true, key, "SeparatorBefore", "");
+    assert_reg_value!(true, key, "SeparatorAfter", "");
     cleanup_entry(entry);
 }
 
