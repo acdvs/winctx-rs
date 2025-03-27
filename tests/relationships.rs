@@ -18,7 +18,7 @@ fn new_entry_has_no_children() {
     let id = Uuid::new_v4().to_string();
     let entry = CtxEntry::new(&id, &ActivationType::Folder).unwrap();
 
-    assert!(entry.children().is_empty());
+    assert!(entry.children().unwrap().is_empty());
     cleanup_entry(entry);
 }
 
@@ -32,11 +32,11 @@ fn parent_with_children() {
     let child_2 = parent.new_child(&child_2_id).unwrap();
 
     assert!(
-        parent.child(&child_1_id).is_some(),
+        parent.child(&child_1_id).unwrap().is_some(),
         "Parent should have child 1"
     );
     assert!(
-        parent.child(&child_2_id).is_some(),
+        parent.child(&child_2_id).unwrap().is_some(),
         "Parent should have child 2"
     );
     assert!(child_1.parent().is_some(), "Child 1 should have parent");
@@ -50,7 +50,7 @@ fn parent_with_children() {
 }
 
 #[test]
-fn child_with_deleted_parent() {
+fn orphan_basic() {
     let parent_id = Uuid::new_v4().to_string();
     let child_id = Uuid::new_v4().to_string();
     let parent = CtxEntry::new(&parent_id, &ActivationType::Folder).unwrap();
@@ -58,4 +58,20 @@ fn child_with_deleted_parent() {
 
     parent.delete().expect("Failed to delete parent");
     assert!(child.parent().is_none(), "Child has parent after deletion");
+}
+
+#[test]
+fn orphan_with_error_value() {
+    let parent_id = Uuid::new_v4().to_string();
+    let child_id = Uuid::new_v4().to_string();
+    let parent = CtxEntry::new(&parent_id, &ActivationType::Folder).unwrap();
+    let mut child = parent.new_child(&child_id).unwrap();
+
+    child
+        .set_icon(Some("test icon"))
+        .expect("Failed to set child icon");
+    parent.delete().expect("Failed to delete parent");
+    child
+        .icon()
+        .expect_err("Should not be able to get child icon after orphaned");
 }

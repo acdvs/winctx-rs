@@ -119,7 +119,7 @@ fn get_and_set_command() {
         .set_command(Some(command))
         .expect("Failed to set command");
     assert_reg_command!(true, key, command);
-    assert_eq!(entry.command().unwrap(), command);
+    assert_eq!(entry.command().unwrap().unwrap(), command);
     cleanup_entry(entry);
 }
 
@@ -133,7 +133,7 @@ fn get_and_set_icon() {
     assert_reg_value!(false, key, "Icon");
     entry.set_icon(Some(icon)).expect("Failed to set icon");
     assert_reg_value!(true, key, "Icon", icon);
-    assert_eq!(entry.icon().unwrap(), icon);
+    assert_eq!(entry.icon().unwrap().unwrap(), icon);
     cleanup_entry(entry);
 }
 
@@ -177,7 +177,7 @@ fn get_and_set_extended() {
     assert_reg_value!(false, key, "Extended");
     entry.set_extended(true).expect("Failed to set extended");
     assert_reg_value!(true, key, "Extended", "");
-    assert_eq!(entry.extended(), true);
+    assert_eq!(entry.extended().unwrap(), true);
     cleanup_entry(entry);
 }
 

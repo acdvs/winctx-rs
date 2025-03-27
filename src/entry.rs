@@ -36,7 +36,6 @@ pub struct CtxEntry {
     /// The path to the entry as a list of entry names
     pub path: Vec<String>,
     pub entry_type: ActivationType,
-    key: RegKey,
 }
 
 /// Options for further customizing an entry
@@ -88,7 +87,6 @@ impl CtxEntry {
         Some(CtxEntry {
             path: name_path.iter().map(|x| x.as_ref().to_string()).collect(),
             entry_type: entry_type.clone(),
-            key: key.unwrap(),
         })
     }
 
@@ -98,7 +96,7 @@ impl CtxEntry {
         opts: &EntryOptions,
     ) -> io::Result<CtxEntry> {
         let path_str = get_full_path(entry_type, name_path);
-        let (key, disp) = HKCR.create_subkey(path_str)?;
+        let (_, disp) = HKCR.create_subkey(path_str)?;
 
         if disp == REG_OPENED_EXISTING_KEY {
             return Err(io::Error::from(ErrorKind::AlreadyExists));
@@ -107,7 +105,6 @@ impl CtxEntry {
         let mut entry = CtxEntry {
             path: name_path.to_vec(),
             entry_type: entry_type.clone(),
-            key,
         };
 
         entry.set_command(opts.command.as_deref())?;
@@ -176,7 +173,7 @@ impl CtxEntry {
     /// entry.delete()?;
     /// ```
     pub fn delete(self) -> io::Result<()> {
-        HKCR.delete_subkey_all(&self.path())
+        HKCR.delete_subkey_all(self.path())
     }
 
     /// Gets the entry's current name.
@@ -185,10 +182,11 @@ impl CtxEntry {
     ///
     /// ```no_run
     /// let entry = CtxEntry::new("Basic entry", ActivationType::Background)?;
-    /// let name = entry.name();
+    /// let name = entry.name()?;
     /// ```
-    pub fn name(&self) -> String {
-        self.path.last().unwrap().to_owned()
+    pub fn name(&self) -> io::Result<String> {
+        let _ = self.key()?;
+        Ok(self.path.last().unwrap().to_owned())
     }
 
     /// Renames the entry.
@@ -199,25 +197,25 @@ impl CtxEntry {
     /// let mut entry = CtxEntry::new("Basic entry", ActivationType::Background)?;
     /// entry.rename("Renamed entry")?;
     /// ```
-    pub fn rename(&mut self, name: &str) -> io::Result<()> {
-        if name.len() == 0 {
+    pub fn rename(&mut self, new_name: &str) -> io::Result<()> {
+        if new_name.len() == 0 {
             return Err(io::Error::new(
                 ErrorKind::InvalidInput,
                 "Name cannot be empty",
             ));
         }
 
+        let old_name = self.name()?;
+
         let parent_name_path = &self.path[..self.path.len() - 1];
         let parent_path_str = get_full_path(&self.entry_type, parent_name_path);
         let parent_key = HKCR.open_subkey(parent_path_str)?;
-
-        let old_name = self.name();
-        let rename_res = parent_key.rename_subkey(old_name, name);
+        let res = parent_key.rename_subkey(old_name, new_name);
 
         let path_len = self.path.len();
-        self.path[path_len - 1] = name.to_string();
+        self.path[path_len - 1] = new_name.to_string();
 
-        rename_res
+        res
     }
 
     /// Gets the entry's command, if any.
@@ -228,14 +226,10 @@ impl CtxEntry {
     /// let entry = CtxEntry::new("Basic entry", ActivationType::Background)?;
     /// let command = entry.command()?;
     /// ```
-    pub fn command(&self) -> Option<String> {
+    pub fn command(&self) -> io::Result<Option<String>> {
         let path = format!(r"{}\command", self.path());
-        let key = get_key(&path);
-
-        match key {
-            Ok(k) => k.get_value::<String, _>("").ok(),
-            Err(_) => None,
-        }
+        let key = get_key(&path)?;
+        Ok(key.get_value::<String, _>("").ok())
     }
 
     /// Sets the entry's command.
@@ -248,12 +242,13 @@ impl CtxEntry {
     /// entry.set_command(Some("powershell.exe -noexit -command Set-Location -literalPath '%V'"))?;
     /// ```
     pub fn set_command(&mut self, command: Option<&str>) -> io::Result<()> {
+        let key = self.key()?;
         match command {
             Some(c) => {
-                let (key, _) = self.key.create_subkey("command")?;
-                key.set_value("", &c)
+                let (command_key, _) = key.create_subkey("command")?;
+                command_key.set_value("", &c)
             }
-            None => match self.key.delete_subkey("command") {
+            None => match key.delete_subkey("command") {
                 Err(e) if e.kind() == ErrorKind::NotFound => Ok(()),
                 Err(e) => Err(e),
                 Ok(_) => Ok(()),
@@ -269,11 +264,9 @@ impl CtxEntry {
     /// let entry = CtxEntry::new("Basic entry", ActivationType::Background)?;
     /// let icon = entry.icon()?;
     /// ```
-    pub fn icon(&self) -> Option<String> {
-        match get_key(&self.path()) {
-            Ok(k) => k.get_value::<String, _>("Icon").ok(),
-            Err(_) => None,
-        }
+    pub fn icon(&self) -> io::Result<Option<String>> {
+        let key = self.key()?;
+        Ok(key.get_value::<String, _>("Icon").ok())
     }
 
     /// Sets the entry's icon.
@@ -285,8 +278,9 @@ impl CtxEntry {
     /// entry.set_icon(Some("C:\\Windows\\System32\\control.exe"))?;
     /// ```
     pub fn set_icon(&mut self, icon: Option<&str>) -> io::Result<()> {
+        let key = self.key()?;
         match icon {
-            Some(icon) => self.key.set_value("Icon", &icon),
+            Some(icon) => key.set_value("Icon", &icon),
             None => self.safe_delete_value("Icon"),
         }
     }
@@ -299,15 +293,15 @@ impl CtxEntry {
     /// let entry = CtxEntry::new("Basic entry", ActivationType::Background)?;
     /// let position = entry.position()?;
     /// ```
-    pub fn position(&self) -> Option<MenuPosition> {
-        match get_key(&self.path()) {
-            Ok(k) => match k.get_value::<String, _>("Position") {
-                Ok(v) if v == "Top" => Some(MenuPosition::Top),
-                Ok(v) if v == "Bottom" => Some(MenuPosition::Bottom),
-                _ => None,
-            },
-            Err(_) => None,
-        }
+    pub fn position(&self) -> io::Result<Option<MenuPosition>> {
+        let key = self.key()?;
+        let val = match key.get_value::<String, _>("Position") {
+            Ok(v) if v == "Top" => Some(MenuPosition::Top),
+            Ok(v) if v == "Bottom" => Some(MenuPosition::Bottom),
+            _ => None,
+        };
+
+        Ok(val)
     }
 
     /// Sets the entry's menu position. By default, new root entries are
@@ -330,7 +324,7 @@ impl CtxEntry {
             None => "",
         };
 
-        self.key.set_value("Position", &position_str)
+        self.key()?.set_value("Position", &position_str)
     }
 
     /// Gets whether the entry appears with Shift+RClick.
@@ -339,13 +333,11 @@ impl CtxEntry {
     ///
     /// ```no_run
     /// let entry = CtxEntry::new("Basic entry", ActivationType::Background)?;
-    /// let is_extended = entry.extended();
+    /// let is_extended = entry.extended()?;
     /// ```
-    pub fn extended(&self) -> bool {
-        match get_key(&self.path()) {
-            Ok(k) => k.get_value::<String, _>("Extended").ok().is_some(),
-            Err(_) => false,
-        }
+    pub fn extended(&self) -> io::Result<bool> {
+        let key = self.key()?;
+        Ok(key.get_value::<String, _>("Extended").ok().is_some())
     }
 
     /// Sets whether the entry should only appear with Shift+RClick.
@@ -358,7 +350,7 @@ impl CtxEntry {
     /// ```
     pub fn set_extended(&mut self, extended: bool) -> io::Result<()> {
         if extended {
-            self.key.set_value("Extended", &"")
+            self.key()?.set_value("Extended", &"")
         } else {
             self.safe_delete_value("Extended")
         }
@@ -372,19 +364,17 @@ impl CtxEntry {
     /// let entry = CtxEntry::new("Basic entry", ActivationType::Background)?;
     /// let separator = entry.separator()?;
     /// ```
-    pub fn separator(&self) -> Option<Separator> {
-        let sep_before = self.key.get_value::<String, _>("SeparatorBefore");
-        let sep_after = self.key.get_value::<String, _>("SeparatorAfter");
+    pub fn separator(&self) -> io::Result<Option<Separator>> {
+        let key = self.key()?;
+        let sep_before = key.get_value::<String, _>("SeparatorBefore");
+        let sep_after = key.get_value::<String, _>("SeparatorAfter");
 
-        if sep_before.is_ok() && sep_after.is_ok() {
-            Some(Separator::Both)
-        } else if sep_before.is_ok() {
-            Some(Separator::Before)
-        } else if sep_after.is_ok() {
-            Some(Separator::After)
-        } else {
-            None
-        }
+        Ok(match (sep_before, sep_after) {
+            (Ok(_), Ok(_)) => Some(Separator::Both),
+            (Ok(_), Err(_)) => Some(Separator::Before),
+            (Err(_), Ok(_)) => Some(Separator::After),
+            _ => None,
+        })
     }
 
     /// Sets the entry's separator(s).
@@ -396,20 +386,21 @@ impl CtxEntry {
     /// entry.set_separator(Some(Separator::After))?;
     /// ```
     pub fn set_separator(&mut self, separator: Option<Separator>) -> io::Result<()> {
+        let key = self.key()?;
         match separator {
             Some(Separator::Before) => {
-                self.key.set_value("SeparatorBefore", &"")?;
+                key.set_value("SeparatorBefore", &"")?;
                 self.safe_delete_value("SeparatorAfter")?;
                 Ok(())
             }
             Some(Separator::After) => {
-                self.key.set_value("SeparatorAfter", &"")?;
+                key.set_value("SeparatorAfter", &"")?;
                 self.safe_delete_value("SeparatorBefore")?;
                 Ok(())
             }
             Some(Separator::Both) => {
-                self.key.set_value("SeparatorBefore", &"")?;
-                self.key.set_value("SeparatorAfter", &"")?;
+                key.set_value("SeparatorBefore", &"")?;
+                key.set_value("SeparatorAfter", &"")?;
                 Ok(())
             }
             None => {
@@ -428,7 +419,7 @@ impl CtxEntry {
     /// let entry = CtxEntry::new("Basic entry", ActivationType::Background)?;
     /// let child = entry.new_child("Basic child entry")?;
     /// let parent = child.parent()?;
-    /// assert_eq!(entry.name(), parent.name());
+    /// assert_eq!(entry.name().unwrap(), parent.name().unwrap());
     /// ```
     pub fn parent(&self) -> Option<CtxEntry> {
         if self.path.len() <= 1 {
@@ -447,20 +438,20 @@ impl CtxEntry {
     /// let entry = CtxEntry::new("Basic entry", ActivationType::Background)?;
     /// let created_child = entry.new_child("Basic child entry")?;
     /// let retrieved_child = entry.child("Basic child entry")?;
-    /// assert_eq!(created_child.name(), retrieved_child.name());
+    /// assert_eq!(created_child.name().unwrap(), retrieved_child.name().unwrap());
     /// ```
-    pub fn child(&self, name: &str) -> Option<CtxEntry> {
+    pub fn child(&self, name: &str) -> io::Result<Option<CtxEntry>> {
         let mut name_path = self.path.clone();
         name_path.push(name.to_string());
         let path_str = get_full_path(&self.entry_type, &name_path);
 
         match get_key(&path_str) {
-            Ok(key) => Some(CtxEntry {
+            Ok(_) => Ok(Some(CtxEntry {
                 path: name_path,
                 entry_type: self.entry_type.clone(),
-                key,
-            }),
-            Err(_) => None,
+            })),
+            Err(e) if e.kind() == ErrorKind::NotFound => Ok(None),
+            Err(e) => Err(e),
         }
     }
 
@@ -472,17 +463,18 @@ impl CtxEntry {
     /// let entry = CtxEntry::new("Basic entry", ActivationType::Background)?;
     /// let child_1 = entry.new_child("Child 1")?;
     /// let child_2 = entry.new_child("Child 2")?;
-    /// let children = entry.children();
+    /// let children = entry.children()?;
     /// ```
-    pub fn children(&self) -> Vec<CtxEntry> {
+    pub fn children(&self) -> io::Result<Vec<CtxEntry>> {
+        let key = self.key()?;
         let mut children = Vec::new();
 
-        for name in self.key.enum_keys().map(|x| x.unwrap()) {
-            let child = self.child(&name).unwrap();
+        for name in key.enum_keys().map(|x| x.unwrap()) {
+            let child = self.child(&name).unwrap().unwrap();
             children.push(child);
         }
 
-        children
+        Ok(children)
     }
 
     /// Creates a new child entry under the entry. The resulting entry
@@ -525,7 +517,8 @@ impl CtxEntry {
     /// )?;
     /// ```
     pub fn new_child_with_options(&self, name: &str, opts: &EntryOptions) -> io::Result<CtxEntry> {
-        self.key.set_value("Subcommands", &"")?;
+        let key = self.key()?;
+        key.set_value("Subcommands", &"")?;
 
         let mut path = self.path.clone();
         path.push(name.to_string());
@@ -545,8 +538,16 @@ impl CtxEntry {
         get_full_path(&self.entry_type, &self.path)
     }
 
+    // Shortcut to get the entry's registry key.
+    // Should be checked before every operation.
+    fn key(&self) -> io::Result<RegKey> {
+        get_key(&self.path())
+    }
+
+    // Delete value without erroring if nonexistent.
     fn safe_delete_value(&self, value: &str) -> io::Result<()> {
-        match self.key.delete_value(value) {
+        let key = self.key()?;
+        match key.delete_value(value) {
             Err(e) if e.kind() == ErrorKind::NotFound => Ok(()),
             Err(e) => Err(e),
             Ok(_) => Ok(()),
@@ -555,5 +556,12 @@ impl CtxEntry {
 }
 
 fn get_key(path: &str) -> io::Result<RegKey> {
-    HKCR.open_subkey_with_flags(path, KEY_ALL_ACCESS)
+    match HKCR.open_subkey_with_flags(path, KEY_ALL_ACCESS) {
+        Err(e) if e.kind() == ErrorKind::NotFound => Err(io::Error::new(
+            ErrorKind::NotFound,
+            "Registry key does not exist",
+        )),
+        Err(e) => Err(e),
+        Ok(key) => Ok(key),
+    }
 }
