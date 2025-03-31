@@ -1,8 +1,7 @@
 use super::path::*;
-use std::io;
-use std::io::ErrorKind;
-use winreg::RegKey;
-use winreg::enums::*;
+use std::collections::HashMap;
+use std::io::{self, ErrorKind};
+use winreg::{RegKey, enums::*};
 
 const HKCR: RegKey = RegKey::predef(HKEY_CLASSES_ROOT);
 
@@ -88,6 +87,28 @@ impl CtxEntry {
             path: name_path.iter().map(|x| x.as_ref().to_string()).collect(),
             entry_type: entry_type.clone(),
         })
+    }
+
+    pub fn get_all_of_type(entry_type: &ActivationType) -> HashMap<String, CtxEntry> {
+        let mut entries = HashMap::new();
+
+        let base_path = get_base_path(&entry_type);
+        let shell_path = format!("{base_path}\\shell");
+        let shell_key = match get_key(&shell_path) {
+            Ok(key) => key,
+            Err(_) => return entries,
+        };
+
+        for entry_name in shell_key.enum_keys().map(|x| x.unwrap()) {
+            match CtxEntry::get(&[entry_name.clone()], entry_type) {
+                Some(entry) => {
+                    entries.insert(entry_name, entry);
+                }
+                None => (),
+            };
+        }
+
+        entries
     }
 
     fn create(

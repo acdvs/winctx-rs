@@ -9,6 +9,20 @@ mod common;
 const HKCR: RegKey = RegKey::predef(HKEY_CLASSES_ROOT);
 
 #[test]
+fn get_all_entries() {
+    let file_entries = CtxEntry::get_all_of_type(&ActivationType::File("*".to_string()));
+    let rs_ext_entries = CtxEntry::get_all_of_type(&ActivationType::File(".rs".to_string()));
+    let folder_entries = CtxEntry::get_all_of_type(&ActivationType::Folder);
+    let bg_entries = CtxEntry::get_all_of_type(&ActivationType::Background);
+
+    // No nice way to test these independently of all systems.
+    assert_eq!(file_entries.len(), 3);
+    assert_eq!(rs_ext_entries.len(), 0);
+    assert_eq!(folder_entries.len(), 4);
+    assert_eq!(bg_entries.len(), 3);
+}
+
+#[test]
 fn get_missing_entry() {
     let id = Uuid::new_v4().to_string();
     let entry = CtxEntry::get(&[id], &ActivationType::Background);
