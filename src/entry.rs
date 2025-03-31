@@ -8,11 +8,11 @@ const HKCR: RegKey = RegKey::predef(HKEY_CLASSES_ROOT);
 /// Entry activation type
 #[derive(Clone)]
 pub enum ActivationType {
-    /// Entry activation on file right click. Must be an extension (e.g., `.rs`) or `*` for any file type
+    /// Entry activation on files (must be an extension (e.g., `.rs`) or `*` for all files)
     File(String),
-    /// Entry activation on folder right click.
+    /// Entry activation on folders
     Folder,
-    /// Entry activation on directory background right click.
+    /// Entry activation on directory backgrounds
     Background,
 }
 
@@ -89,6 +89,13 @@ impl CtxEntry {
         })
     }
 
+    /// Gets all root entries with the given entry type.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// let entries = CtxEntry::get_all_of_type(&ActivationType::Folder);
+    /// ``````
     pub fn get_all_of_type(entry_type: &ActivationType) -> HashMap<String, CtxEntry> {
         let mut entries = HashMap::new();
 
@@ -136,7 +143,7 @@ impl CtxEntry {
         Ok(entry)
     }
 
-    /// Creates a new top-level entry under the given `entry_type`.
+    /// Creates a new top-level entry with the given entry type.
     /// The resulting entry will appear in the context menu but will do
     /// nothing until modified.
     ///

@@ -1,11 +1,3 @@
-//! A Rust library for managing Windows context menu entries.
-//!
-//! ## Installation
-//!
-//! ```sh
-//! cargo add win-ctx
-//! ```
-//!
 //! ## Features
 //!
 //! - Create and edit context menu entries and sub-entries
