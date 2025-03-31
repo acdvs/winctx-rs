@@ -9,6 +9,17 @@ mod common;
 const HKCR: RegKey = RegKey::predef(HKEY_CLASSES_ROOT);
 
 #[test]
+fn get_entry() {
+    let id = Uuid::new_v4().to_string();
+    let new_entry = CtxEntry::new(&id, &ActivationType::Folder).unwrap();
+    let entry = CtxEntry::get(&[&id], &ActivationType::Folder).unwrap();
+    let name = entry.name().unwrap();
+
+    assert_eq!(name, id);
+    cleanup_entry(new_entry);
+}
+
+#[test]
 fn get_all_entries() {
     let file_entries = CtxEntry::get_all_of_type(&ActivationType::File("*".to_string()));
     let rs_ext_entries = CtxEntry::get_all_of_type(&ActivationType::File(".rs".to_string()));
