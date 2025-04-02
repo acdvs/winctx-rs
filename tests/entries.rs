@@ -47,7 +47,7 @@ fn create_and_get_entry() {
     let new_entry = CtxEntry::new(&id, &ActivationType::Folder).unwrap();
     let get_entry = CtxEntry::get(&[id], &ActivationType::Folder).unwrap();
 
-    assert_eq!(&new_entry.path, &get_entry.path);
+    assert_eq!(&new_entry.name_path, &get_entry.name_path);
     cleanup_entry(new_entry);
 }
 

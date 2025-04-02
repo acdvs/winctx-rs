@@ -33,7 +33,7 @@ pub enum Separator {
 
 pub struct CtxEntry {
     /// The path to the entry as a list of entry names
-    pub path: Vec<String>,
+    pub name_path: Vec<String>,
     pub entry_type: ActivationType,
 }
 
@@ -84,7 +84,7 @@ impl CtxEntry {
         }
 
         Some(CtxEntry {
-            path: name_path.iter().map(|x| x.as_ref().to_string()).collect(),
+            name_path: name_path.iter().map(|x| x.as_ref().to_string()).collect(),
             entry_type: entry_type.clone(),
         })
     }
@@ -131,7 +131,7 @@ impl CtxEntry {
         }
 
         let mut entry = CtxEntry {
-            path: name_path.to_vec(),
+            name_path: name_path.to_vec(),
             entry_type: entry_type.clone(),
         };
 
@@ -214,7 +214,7 @@ impl CtxEntry {
     /// ```
     pub fn name(&self) -> io::Result<String> {
         let _ = self.key()?;
-        Ok(self.path.last().unwrap().to_owned())
+        Ok(self.name_path.last().unwrap().to_owned())
     }
 
     /// Renames the entry.
@@ -235,13 +235,13 @@ impl CtxEntry {
 
         let old_name = self.name()?;
 
-        let parent_name_path = &self.path[..self.path.len() - 1];
+        let parent_name_path = &self.name_path[..self.name_path.len() - 1];
         let parent_path_str = get_full_path(&self.entry_type, parent_name_path);
         let parent_key = HKCR.open_subkey(parent_path_str)?;
         let res = parent_key.rename_subkey(old_name, new_name);
 
-        let path_len = self.path.len();
-        self.path[path_len - 1] = new_name.to_string();
+        let path_len = self.name_path.len();
+        self.name_path[path_len - 1] = new_name.to_string();
 
         res
     }
@@ -450,11 +450,11 @@ impl CtxEntry {
     /// assert_eq!(entry.name().unwrap(), parent.name().unwrap());
     /// ```
     pub fn parent(&self) -> Option<CtxEntry> {
-        if self.path.len() <= 1 {
+        if self.name_path.len() <= 1 {
             return None;
         }
 
-        let parent_path = &self.path[..self.path.len() - 1];
+        let parent_path = &self.name_path[..self.name_path.len() - 1];
         CtxEntry::get(parent_path, &self.entry_type)
     }
 
@@ -469,13 +469,13 @@ impl CtxEntry {
     /// assert_eq!(created_child.name().unwrap(), retrieved_child.name().unwrap());
     /// ```
     pub fn child(&self, name: &str) -> io::Result<Option<CtxEntry>> {
-        let mut name_path = self.path.clone();
+        let mut name_path = self.name_path.clone();
         name_path.push(name.to_string());
         let path_str = get_full_path(&self.entry_type, &name_path);
 
         match get_key(&path_str) {
             Ok(_) => Ok(Some(CtxEntry {
-                path: name_path,
+                name_path,
                 entry_type: self.entry_type.clone(),
             })),
             Err(e) if e.kind() == ErrorKind::NotFound => Ok(None),
@@ -550,7 +550,7 @@ impl CtxEntry {
         let key = self.key()?;
         key.set_value("Subcommands", &"")?;
 
-        let mut path = self.path.clone();
+        let mut path = self.name_path.clone();
         path.push(name.to_string());
 
         CtxEntry::create(path.as_slice(), &self.entry_type, &opts)
@@ -565,7 +565,7 @@ impl CtxEntry {
     /// let path = entry.path();
     /// ```
     pub fn path(&self) -> String {
-        get_full_path(&self.entry_type, &self.path)
+        get_full_path(&self.entry_type, &self.name_path)
     }
 
     // Shortcut to get the entry's registry key.
