@@ -498,8 +498,10 @@ impl CtxEntry {
         let mut children = Vec::new();
 
         for name in key.enum_keys().map(|x| x.unwrap()) {
-            let child = self.child(&name).unwrap().unwrap();
-            children.push(child);
+            match self.child(&name).unwrap() {
+                Some(child) => children.push(child),
+                None => (),
+            }
         }
 
         Ok(children)
