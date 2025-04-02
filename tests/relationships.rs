@@ -31,6 +31,11 @@ fn parent_with_children() {
     let child_1 = parent.new_child(&child_1_id).unwrap();
     let child_2 = parent.new_child(&child_2_id).unwrap();
 
+    assert_eq!(
+        parent.children().unwrap().len(),
+        2,
+        "Parent should have two children"
+    );
     assert!(
         parent.child(&child_1_id).unwrap().is_some(),
         "Parent should have child 1"

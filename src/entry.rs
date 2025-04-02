@@ -494,10 +494,16 @@ impl CtxEntry {
     /// let children = entry.children()?;
     /// ```
     pub fn children(&self) -> io::Result<Vec<CtxEntry>> {
-        let key = self.key()?;
+        let path = format!("{}\\shell", self.path());
+        let key = get_key(&path);
+
+        if key.is_err() {
+            return Ok(Vec::new());
+        }
+
         let mut children = Vec::new();
 
-        for name in key.enum_keys().map(|x| x.unwrap()) {
+        for name in key.unwrap().enum_keys().map(|x| x.unwrap()) {
             match self.child(&name).unwrap() {
                 Some(child) => children.push(child),
                 None => (),
