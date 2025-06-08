@@ -202,7 +202,7 @@ fn get_and_set_extended() {
     assert_reg_value!(false, key, "Extended");
     entry.set_extended(true).expect("Failed to set extended");
     assert_reg_value!(true, key, "Extended", "");
-    assert_eq!(entry.extended().unwrap(), true);
+    assert!(entry.extended().unwrap());
     cleanup_entry(entry);
 }
 
