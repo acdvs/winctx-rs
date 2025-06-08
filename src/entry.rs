@@ -6,7 +6,7 @@ use winreg::{RegKey, enums::*};
 const HKCR: RegKey = RegKey::predef(HKEY_CLASSES_ROOT);
 
 /// Entry activation type
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub enum ActivationType {
     /// Entry activation on files (must be an extension (e.g., `.rs`) or `*` for all files)
     File(String),
@@ -17,20 +17,21 @@ pub enum ActivationType {
 }
 
 /// Entry position in the context menu
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub enum MenuPosition {
     Top,
     Bottom,
 }
 
 /// Context menu separator
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub enum Separator {
     Before,
     After,
     Both,
 }
 
+#[derive(Debug)]
 pub struct CtxEntry {
     /// The path to the entry as a list of entry names
     pub name_path: Vec<String>,
@@ -38,7 +39,7 @@ pub struct CtxEntry {
 }
 
 /// Options for further customizing an entry
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub struct EntryOptions {
     /// Command to run when the entry is selected
     pub command: Option<String>,
