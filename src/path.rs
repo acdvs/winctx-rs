@@ -16,7 +16,7 @@ pub fn get_base_path(entry_type: &ActivationType) -> String {
 pub fn get_full_path<N: AsRef<str>>(entry_type: &ActivationType, name_path: &[N]) -> String {
     let mut path = get_base_path(entry_type);
 
-    if name_path.len() == 0 {
+    if name_path.is_empty() {
         path.push_str("\\shell");
     }
 

@@ -6,7 +6,7 @@ use winreg::{RegKey, enums::*};
 const HKCR: RegKey = RegKey::predef(HKEY_CLASSES_ROOT);
 
 /// Entry activation type
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub enum ActivationType {
     /// Entry activation on files (must be an extension (e.g., `.rs`) or `*` for all files)
     File(String),
@@ -17,20 +17,21 @@ pub enum ActivationType {
 }
 
 /// Entry position in the context menu
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub enum MenuPosition {
     Top,
     Bottom,
 }
 
 /// Context menu separator
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub enum Separator {
     Before,
     After,
     Both,
 }
 
+#[derive(Debug)]
 pub struct CtxEntry {
     /// The path to the entry as a list of entry names
     pub name_path: Vec<String>,
@@ -38,7 +39,7 @@ pub struct CtxEntry {
 }
 
 /// Options for further customizing an entry
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub struct EntryOptions {
     /// Command to run when the entry is selected
     pub command: Option<String>,
@@ -63,11 +64,11 @@ impl CtxEntry {
     /// let entry = CtxEntry::get(name_path, &ActivationType::Folder)?;
     /// ``````
     pub fn get<N: AsRef<str>>(name_path: &[N], entry_type: &ActivationType) -> Option<CtxEntry> {
-        if name_path.len() == 0 {
+        if name_path.is_empty() {
             return None;
         }
 
-        let mut str_path = get_base_path(&entry_type);
+        let mut str_path = get_base_path(entry_type);
 
         for entry_name in name_path.iter().map(|x| x.as_ref()) {
             str_path.push_str(&format!("\\shell\\{entry_name}"));
@@ -78,7 +79,7 @@ impl CtxEntry {
         if key
             .as_ref()
             .err()
-            .map_or(false, |e| e.kind() == ErrorKind::NotFound)
+            .is_some_and(|e| e.kind() == ErrorKind::NotFound)
         {
             return None;
         }
@@ -99,7 +100,7 @@ impl CtxEntry {
     pub fn get_all_of_type(entry_type: &ActivationType) -> HashMap<String, CtxEntry> {
         let mut entries = HashMap::new();
 
-        let base_path = get_base_path(&entry_type);
+        let base_path = get_base_path(entry_type);
         let shell_path = format!("{base_path}\\shell");
         let shell_key = match get_key(&shell_path) {
             Ok(key) => key,
@@ -107,11 +108,8 @@ impl CtxEntry {
         };
 
         for entry_name in shell_key.enum_keys().map(|x| x.unwrap()) {
-            match CtxEntry::get(&[entry_name.clone()], entry_type) {
-                Some(entry) => {
-                    entries.insert(entry_name, entry);
-                }
-                None => (),
+            if let Some(entry) = CtxEntry::get(&[entry_name.clone()], entry_type) {
+                entries.insert(entry_name, entry);
             };
         }
 
@@ -226,7 +224,7 @@ impl CtxEntry {
     /// entry.rename("Renamed entry")?;
     /// ```
     pub fn rename(&mut self, new_name: &str) -> io::Result<()> {
-        if new_name.len() == 0 {
+        if new_name.is_empty() {
             return Err(io::Error::new(
                 ErrorKind::InvalidInput,
                 "Name cannot be empty",
@@ -504,9 +502,8 @@ impl CtxEntry {
         let mut children = Vec::new();
 
         for name in key.unwrap().enum_keys().map(|x| x.unwrap()) {
-            match self.child(&name).unwrap() {
-                Some(child) => children.push(child),
-                None => (),
+            if let Some(child) = self.child(&name).unwrap() {
+                children.push(child)
             }
         }
 
@@ -559,7 +556,7 @@ impl CtxEntry {
         let mut path = self.name_path.clone();
         path.push(name.to_string());
 
-        CtxEntry::create(path.as_slice(), &self.entry_type, &opts)
+        CtxEntry::create(path.as_slice(), &self.entry_type, opts)
     }
 
     /// Gets the full path to the entry's registry key.
