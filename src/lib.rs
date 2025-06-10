@@ -1,5 +1,3 @@
-#![warn(missing_debug_implementations)]
-
 //! ## Features
 //!
 //! - Create and edit context menu entries and sub-entries
